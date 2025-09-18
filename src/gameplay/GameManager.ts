@@ -11,6 +11,9 @@ import { ProjectilePool } from '@/ecs/pools/ProjectilePool';
 import { Position } from '@/ecs/components/Position';
 import { Team } from '@/ecs/components/Team';
 import { AudioManager } from '@/audio/AudioManager';
+import { PerformanceManager, PerformanceConfig } from '@/core/PerformanceManager';
+import { UIManager } from '@/ui/UIManager';
+import { SaveSystem } from './SaveSystem';
 
 // Systems
 import { MovementSystem } from '@/ecs/systems/MovementSystem';
@@ -30,6 +33,9 @@ export class GameManager {
   public waveManager: WaveManager;
   public economy: Economy;
   public audioManager: AudioManager;
+  public performanceManager: PerformanceManager;
+  public uiManager: UIManager;
+  public saveSystem: SaveSystem;
 
   // Factories
   public towerFactory: TowerFactory;
@@ -46,6 +52,7 @@ export class GameManager {
   public lives: number = 20;
   public isPlaying: boolean = false;
   public score: number = 0;
+  public currentWave: number = 0;
 
   constructor(scene: Phaser.Scene) {
     // Initialize core systems
@@ -77,6 +84,23 @@ export class GameManager {
 
     // Initialize wave manager
     this.waveManager = new WaveManager(this.enemyFactory);
+
+    // Initialize performance manager
+    const performanceConfig: PerformanceConfig = {
+      targetFPS: 60,
+      minFPS: 30,
+      maxEntities: 500,
+      lodDistance: 300,
+      adaptiveQuality: true,
+      gcOptimization: true
+    };
+    this.performanceManager = new PerformanceManager(performanceConfig);
+
+    // Initialize UI manager
+    this.uiManager = new UIManager(scene, this);
+
+    // Initialize save system
+    this.saveSystem = new SaveSystem(this);
 
     // Initialize ECS systems
     this.renderSystem = new RenderSystem(scene);
@@ -137,7 +161,16 @@ export class GameManager {
     });
   }
 
-  update(dt: number): void {
+  update(dt: number, gameTime: number = Date.now()): void {
+    // Update performance manager always (even when paused)
+    this.performanceManager.update(dt, gameTime);
+
+    // Update save system
+    this.saveSystem.update(dt);
+
+    // Update UI manager
+    this.uiManager.update(dt);
+
     if (!this.isPlaying) return;
 
     // Update core systems
@@ -262,7 +295,7 @@ export class GameManager {
 
   gameOver(): void {
     this.isPlaying = false;
-    eventBus.emit('game:over', { wave: this.currentWave, gold: this.gold });
+    eventBus.emit('game:over', { wave: this.currentWave, gold: this.economy.getGold() });
   }
 
   // Utility methods
@@ -290,6 +323,8 @@ export class GameManager {
     this.enemyFactory.clear();
     this.projectilePool.clear();
     this.audioManager.destroy();
+    this.performanceManager.destroy();
+    this.uiManager.destroy();
     eventBus.clear();
   }
 }

@@ -10,6 +10,8 @@ export class PlayScene extends Phaser.Scene {
   private goldText!: Phaser.GameObjects.Text;
   private waveText!: Phaser.GameObjects.Text;
   private livesText!: Phaser.GameObjects.Text;
+  private helpPanel!: Phaser.GameObjects.Container;
+  private helpVisible: boolean = false;
 
   constructor() {
     super({ key: 'PlayScene' });
@@ -63,6 +65,11 @@ export class PlayScene extends Phaser.Scene {
     // Setup event listeners
     this.setupEventListeners();
 
+    // Settings scene lifecycle
+    eventBus.on('settings:closed', () => {
+      this.gameManager.resumeGame();
+    });
+
     // Controls
     this.setupControls();
 
@@ -83,11 +90,41 @@ export class PlayScene extends Phaser.Scene {
       fontFamily: 'Arial, sans-serif',
       fontStyle: 'bold'
     }).setOrigin(0.5);
+
+    // Settings button
+    const settingsButton = this.add.rectangle(width - 50, 30, 40, 40, 0x7f8c8d);
+    settingsButton.setInteractive({ useHandCursor: true });
+    settingsButton.on('pointerdown', () => {
+      this.gameManager.pauseGame();
+      this.scene.launch('SettingsScene');
+      eventBus.emit('ui:click');
+    });
+
+    this.add.text(width - 50, 30, '⚙', {
+      fontSize: '24px',
+      color: '#ffffff',
+      fontFamily: 'Arial, sans-serif'
+    }).setOrigin(0.5);
+
+    // Help button
+    const helpButton = this.add.rectangle(width - 100, 30, 40, 40, 0x7f8c8d);
+    helpButton.setInteractive({ useHandCursor: true });
+    helpButton.on('pointerdown', () => {
+      this.toggleHelpPanel();
+      eventBus.emit('ui:click');
+    });
+
+    this.add.text(width - 100, 30, '?', {
+      fontSize: '24px',
+      color: '#ffffff',
+      fontFamily: 'Arial, sans-serif',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
   }
 
   update(time: number, delta: number): void {
     const dt = delta / 1000;
-    this.gameManager.update(dt);
+    this.gameManager.update(dt, time);
   }
 
   private setupEventListeners(): void {
@@ -110,18 +147,46 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private setupControls(): void {
-    // ESC to return to menu
+    // ESC to toggle settings or return to menu
     this.input.keyboard?.on('keydown-ESC', () => {
-      this.gameManager.destroy();
-      this.scene.start('MainMenuScene');
+      if (this.scene.isActive('SettingsScene')) {
+        eventBus.emit('settings:close');
+      } else {
+        this.gameManager.pauseGame();
+        this.scene.launch('SettingsScene');
+      }
     });
 
     // Grid interaction
     this.input.on('pointerdown', this.onGridClick, this);
 
-    // Space to spawn enemy (for testing)
+    // Space to start next wave
     this.input.keyboard?.on('keydown-SPACE', () => {
-      this.gameManager.spawnEnemy('normal');
+      eventBus.emit('wave:start');
+    });
+
+    // Number keys for quick tower selection
+    this.input.keyboard?.on('keydown-ONE', () => {
+      this.selectTowerType('basic');
+    });
+
+    this.input.keyboard?.on('keydown-TWO', () => {
+      this.selectTowerType('aoe');
+    });
+
+    this.input.keyboard?.on('keydown-THREE', () => {
+      this.selectTowerType('slow');
+    });
+
+    // P for pause/resume
+    this.input.keyboard?.on('keydown-P', () => {
+      if (this.gameManager.isPlaying) {
+        this.gameManager.pauseGame();
+        this.showNotification('Game Paused', 'info');
+      } else {
+        this.gameManager.resumeGame();
+        this.showNotification('Game Resumed', 'info');
+      }
     });
   }
 
@@ -191,8 +256,8 @@ export class PlayScene extends Phaser.Scene {
     const basicTower = this.add.rectangle(paletteX, startY, 60, 60, 0x4a90e2);
     basicTower.setInteractive({ useHandCursor: true });
     basicTower.on('pointerdown', () => this.selectTowerType('basic'));
-    this.add.text(paletteX, startY + 40, 'Basic\n$10', {
-      fontSize: '12px',
+    this.add.text(paletteX, startY + 40, 'Basic\n$10\n[1]', {
+      fontSize: '11px',
       color: '#ffffff',
       fontFamily: 'Arial, sans-serif',
       align: 'center'
@@ -202,8 +267,8 @@ export class PlayScene extends Phaser.Scene {
     const aoeTower = this.add.rectangle(paletteX, startY + 100, 60, 60, 0xe74c3c);
     aoeTower.setInteractive({ useHandCursor: true });
     aoeTower.on('pointerdown', () => this.selectTowerType('aoe'));
-    this.add.text(paletteX, startY + 140, 'AOE\n$25', {
-      fontSize: '12px',
+    this.add.text(paletteX, startY + 140, 'AOE\n$25\n[2]', {
+      fontSize: '11px',
       color: '#ffffff',
       fontFamily: 'Arial, sans-serif',
       align: 'center'
@@ -213,8 +278,8 @@ export class PlayScene extends Phaser.Scene {
     const slowTower = this.add.rectangle(paletteX, startY + 200, 60, 60, 0x3498db);
     slowTower.setInteractive({ useHandCursor: true });
     slowTower.on('pointerdown', () => this.selectTowerType('slow'));
-    this.add.text(paletteX, startY + 240, 'Slow\n$15', {
-      fontSize: '12px',
+    this.add.text(paletteX, startY + 240, 'Slow\n$15\n[3]', {
+      fontSize: '11px',
       color: '#ffffff',
       fontFamily: 'Arial, sans-serif',
       align: 'center'
@@ -256,5 +321,76 @@ export class PlayScene extends Phaser.Scene {
         this.showNotification('Select a tower type first!', 'error');
       }
     }
+  }
+
+  private toggleHelpPanel(): void {
+    if (!this.helpPanel) {
+      this.createHelpPanel();
+    }
+
+    this.helpVisible = !this.helpVisible;
+    this.helpPanel.setVisible(this.helpVisible);
+
+    if (this.helpVisible) {
+      this.gameManager.pauseGame();
+    } else {
+      this.gameManager.resumeGame();
+    }
+  }
+
+  private createHelpPanel(): void {
+    const { width, height } = this.cameras.main;
+
+    this.helpPanel = this.add.container(width / 2, height / 2);
+
+    // Background
+    const bg = this.add.rectangle(0, 0, 400, 300, 0x2c3e50, 0.95);
+    bg.setStrokeStyle(2, 0x34495e);
+    this.helpPanel.add(bg);
+
+    // Title
+    const title = this.add.text(0, -120, 'CONTROLS', {
+      fontSize: '24px',
+      color: '#ecf0f1',
+      fontFamily: 'Arial, sans-serif',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    this.helpPanel.add(title);
+
+    // Controls text
+    const controls = [
+      '1, 2, 3 - Select tower types',
+      'Space - Start next wave',
+      'P - Pause/Resume game',
+      'ESC - Settings menu',
+      '? - Toggle this help',
+      '',
+      'Click towers to upgrade',
+      'Click grid to place towers'
+    ].join('\\n');
+
+    const controlsText = this.add.text(0, -20, controls, {
+      fontSize: '14px',
+      color: '#bdc3c7',
+      fontFamily: 'Arial, sans-serif',
+      align: 'center'
+    }).setOrigin(0.5);
+    this.helpPanel.add(controlsText);
+
+    // Close button
+    const closeButton = this.add.rectangle(0, 110, 100, 30, 0xe74c3c);
+    closeButton.setInteractive({ useHandCursor: true });
+    closeButton.on('pointerdown', () => this.toggleHelpPanel());
+    this.helpPanel.add(closeButton);
+
+    const closeText = this.add.text(0, 110, 'CLOSE', {
+      fontSize: '14px',
+      color: '#ffffff',
+      fontFamily: 'Arial, sans-serif',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    this.helpPanel.add(closeText);
+
+    this.helpPanel.setVisible(false);
   }
 }
