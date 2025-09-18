@@ -2,12 +2,15 @@ import { World } from '@/ecs/World';
 import { Grid } from './Grid';
 import { PathManager } from './PathManager';
 import { CollisionManager } from './CollisionManager';
+import { WaveManager } from './WaveManager';
+import { Economy, EconomyConfig } from './Economy';
 import { TowerFactory } from '@/towers/TowerFactory';
 import { EnemyFactory } from '@/enemies/EnemyFactory';
 import { EnemyPool } from '@/ecs/pools/EnemyPool';
 import { ProjectilePool } from '@/ecs/pools/ProjectilePool';
 import { Position } from '@/ecs/components/Position';
 import { Team } from '@/ecs/components/Team';
+import { AudioManager } from '@/audio/AudioManager';
 
 // Systems
 import { MovementSystem } from '@/ecs/systems/MovementSystem';
@@ -24,6 +27,9 @@ export class GameManager {
   public grid: Grid;
   public pathManager: PathManager;
   public collisionManager: CollisionManager;
+  public waveManager: WaveManager;
+  public economy: Economy;
+  public audioManager: AudioManager;
 
   // Factories
   public towerFactory: TowerFactory;
@@ -37,10 +43,9 @@ export class GameManager {
   public projectileSystem: ProjectileSystem;
 
   // Game state
-  public gold: number = gameConfig.startingGold;
   public lives: number = 20;
-  public currentWave: number = 0;
   public isPlaying: boolean = false;
+  public score: number = 0;
 
   constructor(scene: Phaser.Scene) {
     // Initialize core systems
@@ -49,10 +54,29 @@ export class GameManager {
     this.pathManager = new PathManager(this.grid);
     this.collisionManager = new CollisionManager(gameConfig.performance.spatialHashCellSize);
 
+    // Initialize audio
+    this.audioManager = new AudioManager();
+    this.audioManager.initialize();
+
+    // Initialize economy
+    const economyConfig: EconomyConfig = {
+      startingGold: gameConfig.startingGold,
+      interestRate: 0.02,
+      interestInterval: 15.0,
+      maxInterestGold: 1000,
+      killBountyMultiplier: 1.0,
+      waveBountyMultiplier: 1.0,
+      sellRefundRate: 0.7
+    };
+    this.economy = new Economy(economyConfig);
+
     // Initialize factories
     this.towerFactory = new TowerFactory(this.world, this.grid);
     this.enemyFactory = new EnemyFactory(this.world, this.grid, this.pathManager);
     this.projectilePool = new ProjectilePool(gameConfig.performance.maxProjectiles, this.world);
+
+    // Initialize wave manager
+    this.waveManager = new WaveManager(this.enemyFactory);
 
     // Initialize ECS systems
     this.renderSystem = new RenderSystem(scene);
@@ -77,6 +101,7 @@ export class GameManager {
   }
 
   private setupEventListeners(): void {
+    // Tower events
     eventBus.on('tower:place', (data: { towerType: string; gridX: number; gridY: number }) => {
       this.placeTower(data.towerType, { x: data.gridX, y: data.gridY });
     });
@@ -85,13 +110,39 @@ export class GameManager {
       this.upgradeTower(data.entityId);
     });
 
-    eventBus.on('enemy:spawn', (data: { enemyType: string }) => {
-      this.spawnEnemy(data.enemyType);
+    // Wave events
+    eventBus.on('wave:start', () => {
+      this.waveManager.startNextWave();
+    });
+
+    eventBus.on('wave:completed', (data: { bounty: number; wave: number }) => {
+      this.score += data.bounty * 10; // Score bonus for wave completion
+    });
+
+    // Enemy events
+    eventBus.on('enemy:killed', (data: { bounty: number; enemyType: string; enemyId: number }) => {
+      this.score += data.bounty;
+    });
+
+    eventBus.on('enemy:reachedGoal', () => {
+      this.lives--;
+      if (this.lives <= 0) {
+        this.gameOver();
+      }
+    });
+
+    // Economy events
+    eventBus.on('economy:goldChanged', (data: { gold: number }) => {
+      eventBus.emit('ui:goldUpdate', { gold: data.gold });
     });
   }
 
   update(dt: number): void {
     if (!this.isPlaying) return;
+
+    // Update core systems
+    this.waveManager.update(dt);
+    this.economy.update(dt);
 
     // Update ECS world
     this.world.update(dt);
@@ -130,7 +181,7 @@ export class GameManager {
   placeTower(towerType: string, gridPos: { x: number; y: number }): boolean {
     const cost = this.towerFactory.getTowerCost(towerType);
 
-    if (this.gold < cost) {
+    if (!this.economy.canAfford(cost)) {
       eventBus.emit('notification', { message: 'Not enough gold!', type: 'error' });
       return false;
     }
@@ -141,10 +192,11 @@ export class GameManager {
       return false;
     }
 
-    this.gold -= cost;
+    this.economy.spendGold(cost, `${towerType} tower`);
     this.pathManager.markDirty(); // Recompute pathfinding
 
-    eventBus.emit('gold:changed', { gold: this.gold });
+    eventBus.emit('tower:purchased', { cost, towerType });
+    eventBus.emit('tower:placed');
     eventBus.emit('notification', { message: `${towerType} tower placed!`, type: 'success' });
 
     return true;
@@ -153,14 +205,15 @@ export class GameManager {
   upgradeTower(entityId: number): boolean {
     const cost = this.towerFactory.getUpgradeCost(entityId);
 
-    if (this.gold < cost) {
+    if (!this.economy.canAfford(cost)) {
       eventBus.emit('notification', { message: 'Not enough gold to upgrade!', type: 'error' });
       return false;
     }
 
+    const towerData = this.towerFactory.getTowerData(entityId);
     if (this.towerFactory.upgradeTower(entityId)) {
-      this.gold -= cost;
-      eventBus.emit('gold:changed', { gold: this.gold });
+      this.economy.spendGold(cost, `${towerData?.config.name || 'Tower'} upgrade`);
+      eventBus.emit('tower:upgraded', { cost, towerType: towerData?.config.name || 'Unknown' });
       eventBus.emit('notification', { message: 'Tower upgraded!', type: 'success' });
       return true;
     }
@@ -215,12 +268,15 @@ export class GameManager {
   // Utility methods
   getStats(): any {
     return {
-      gold: this.gold,
+      gold: this.economy.getGold(),
       lives: this.lives,
-      wave: this.currentWave,
+      wave: this.waveManager.getCurrentWave(),
+      score: this.score,
       enemies: this.enemyFactory.getPoolStats(),
       projectiles: this.projectilePool.getPoolStats(),
-      towers: this.towerFactory.getAllTowers().size
+      towers: this.towerFactory.getAllTowers().size,
+      waveState: this.waveManager.getWaveState(),
+      waveProgress: this.waveManager.getWaveProgress()
     };
   }
 
@@ -233,6 +289,7 @@ export class GameManager {
     this.renderSystem.destroy();
     this.enemyFactory.clear();
     this.projectilePool.clear();
+    this.audioManager.destroy();
     eventBus.clear();
   }
 }

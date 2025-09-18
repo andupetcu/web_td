@@ -33,14 +33,14 @@ export class PlayScene extends Phaser.Scene {
     const hudBackground = this.add.rectangle(width / 2, height - hudHeight / 2, width, hudHeight, 0x34495e);
 
     // UI Text elements
-    this.goldText = this.add.text(20, height - hudHeight + 20, `Gold: ${this.gameManager.gold}`, {
+    this.goldText = this.add.text(20, height - hudHeight + 20, `Gold: ${this.gameManager.economy.getGold()}`, {
       fontSize: '24px',
       color: '#f1c40f',
       fontFamily: 'Arial, sans-serif',
       fontStyle: 'bold'
     });
 
-    this.waveText = this.add.text(200, height - hudHeight + 20, `Wave: ${this.gameManager.currentWave}`, {
+    this.waveText = this.add.text(200, height - hudHeight + 20, `Wave: ${this.gameManager.waveManager.getCurrentWave()}`, {
       fontSize: '24px',
       color: '#e74c3c',
       fontFamily: 'Arial, sans-serif',
@@ -69,14 +69,20 @@ export class PlayScene extends Phaser.Scene {
     // Start the game
     this.gameManager.startGame();
 
-    // Spawn a test enemy every 3 seconds
-    this.time.addEvent({
-      delay: 3000,
-      callback: () => {
-        this.gameManager.spawnEnemy('normal');
-      },
-      loop: true
+    // Add wave control button
+    const startWaveButton = this.add.rectangle(500, height - hudHeight + 30, 120, 40, 0x27ae60);
+    startWaveButton.setInteractive({ useHandCursor: true });
+    startWaveButton.on('pointerdown', () => {
+      eventBus.emit('wave:start');
+      eventBus.emit('ui:click');
     });
+
+    this.add.text(500, height - hudHeight + 30, 'Start Wave', {
+      fontSize: '16px',
+      color: '#ffffff',
+      fontFamily: 'Arial, sans-serif',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
   }
 
   update(time: number, delta: number): void {
@@ -85,8 +91,17 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private setupEventListeners(): void {
-    eventBus.on('gold:changed', (data: { gold: number }) => {
+    eventBus.on('ui:goldUpdate', (data: { gold: number }) => {
       this.goldText.setText(`Gold: ${data.gold}`);
+    });
+
+    eventBus.on('wave:started', (data: { wave: number; name: string }) => {
+      this.waveText.setText(`Wave: ${data.wave}`);
+      this.showNotification(`${data.name} incoming!`, 'info');
+    });
+
+    eventBus.on('wave:completed', (data: { wave: number; bounty: number }) => {
+      this.showNotification(`Wave ${data.wave} completed! +${data.bounty} gold`, 'success');
     });
 
     eventBus.on('notification', (data: { message: string; type: string }) => {
@@ -111,7 +126,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private showNotification(message: string, type: string): void {
-    const color = type === 'error' ? '#ff0000' : type === 'success' ? '#00ff00' : '#ffffff';
+    const color = type === 'error' ? '#ff0000' : type === 'success' ? '#00ff00' : type === 'info' ? '#3498db' : '#ffffff';
 
     const notification = this.add.text(this.cameras.main.width / 2, 100, message, {
       fontSize: '18px',
