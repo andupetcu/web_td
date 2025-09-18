@@ -1,0 +1,16 @@
+{
+  "gridSize": 64,
+  "mapWidth": 15,
+  "mapHeight": 15,
+  "startingGold": 60,
+  "targetFPS": 60,
+  "ui": {
+    "hudHeight": 100,
+    "towerPaletteWidth": 200
+  },
+  "performance": {
+    "maxEnemies": 500,
+    "maxProjectiles": 200,
+    "spatialHashCellSize": 128
+  }
+}

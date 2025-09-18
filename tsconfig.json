@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "strict": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/core/*": ["src/core/*"],
+      "@/ecs/*": ["src/ecs/*"],
+      "@/gameplay/*": ["src/gameplay/*"],
+      "@/towers/*": ["src/towers/*"],
+      "@/enemies/*": ["src/enemies/*"],
+      "@/ui/*": ["src/ui/*"],
+      "@/config/*": ["src/config/*"],
+      "@/scenes/*": ["src/scenes/*"]
+    }
+  },
+  "include": ["src"]
+}
