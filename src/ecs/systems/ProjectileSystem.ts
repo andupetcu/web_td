@@ -12,17 +12,20 @@ export class ProjectileSystem implements System {
   private collisionManager: CollisionManager;
   private enemyFactory: EnemyFactory;
   private renderSystem: RenderSystem;
+  private world: World;
 
   constructor(
     projectilePool: ProjectilePool,
     collisionManager: CollisionManager,
     enemyFactory: EnemyFactory,
-    renderSystem: RenderSystem
+    renderSystem: RenderSystem,
+    world: World
   ) {
     this.projectilePool = projectilePool;
     this.collisionManager = collisionManager;
     this.enemyFactory = enemyFactory;
     this.renderSystem = renderSystem;
+    this.world = world;
   }
 
   update(dt: number, world: World): void {
@@ -75,7 +78,7 @@ export class ProjectileSystem implements System {
     const isDead = this.enemyFactory.applyDamage(targetId, projectileData.damage);
 
     // Show damage numbers
-    const position = this.projectilePool.getWorld().getComponent<Position>(targetId, 'Position');
+    const position = this.world.getComponent<Position>(targetId, 'Position');
     if (position) {
       this.renderSystem.createFloatingText(
         position.x,
