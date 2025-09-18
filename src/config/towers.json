@@ -1,0 +1,105 @@
+[
+  {
+    "id": "basic",
+    "name": "Basic Tower",
+    "type": "basic",
+    "baseDamage": 15,
+    "range": 120,
+    "fireRate": 2.0,
+    "cost": 10,
+    "texture": "tower-basic",
+    "projectileType": "basic",
+    "description": "A simple tower with balanced damage and range",
+    "upgrades": [
+      {"tier": 1, "damageMult": 1.5, "rangeMult": 1.1, "fireRateMult": 1.2, "cost": 20},
+      {"tier": 2, "damageMult": 2.0, "rangeMult": 1.2, "fireRateMult": 1.4, "cost": 40},
+      {"tier": 3, "damageMult": 3.0, "rangeMult": 1.3, "fireRateMult": 1.6, "cost": 80}
+    ]
+  },
+  {
+    "id": "aoe",
+    "name": "Cannon Tower",
+    "type": "aoe",
+    "baseDamage": 35,
+    "range": 100,
+    "fireRate": 1.0,
+    "cost": 25,
+    "texture": "tower-aoe",
+    "projectileType": "aoe",
+    "description": "Fires explosive projectiles that damage multiple enemies",
+    "splash": {
+      "radius": 80,
+      "falloff": 0.6
+    },
+    "upgrades": [
+      {"tier": 1, "damageMult": 1.4, "rangeMult": 1.1, "fireRateMult": 1.1, "cost": 50},
+      {"tier": 2, "damageMult": 1.8, "rangeMult": 1.2, "fireRateMult": 1.2, "cost": 100},
+      {"tier": 3, "damageMult": 2.5, "rangeMult": 1.3, "fireRateMult": 1.3, "cost": 200}
+    ]
+  },
+  {
+    "id": "slow",
+    "name": "Frost Tower",
+    "type": "slow",
+    "baseDamage": 8,
+    "range": 110,
+    "fireRate": 1.5,
+    "cost": 15,
+    "texture": "tower-slow",
+    "projectileType": "basic",
+    "description": "Slows enemies while dealing moderate damage",
+    "slow": {
+      "pct": 0.5,
+      "duration": 3.0
+    },
+    "upgrades": [
+      {"tier": 1, "damageMult": 1.3, "rangeMult": 1.15, "fireRateMult": 1.2, "cost": 30},
+      {"tier": 2, "damageMult": 1.6, "rangeMult": 1.25, "fireRateMult": 1.4, "cost": 60},
+      {"tier": 3, "damageMult": 2.2, "rangeMult": 1.4, "fireRateMult": 1.6, "cost": 120}
+    ]
+  },
+  {
+    "id": "dot",
+    "name": "Poison Tower",
+    "type": "dot",
+    "baseDamage": 5,
+    "range": 100,
+    "fireRate": 1.8,
+    "cost": 18,
+    "texture": "tower-basic",
+    "projectileType": "basic",
+    "description": "Applies poison that deals damage over time",
+    "dot": {
+      "dps": 8,
+      "tick": 0.5,
+      "duration": 4.0
+    },
+    "upgrades": [
+      {"tier": 1, "damageMult": 1.2, "rangeMult": 1.1, "fireRateMult": 1.3, "cost": 35},
+      {"tier": 2, "damageMult": 1.5, "rangeMult": 1.2, "fireRateMult": 1.5, "cost": 70},
+      {"tier": 3, "damageMult": 2.0, "rangeMult": 1.3, "fireRateMult": 1.8, "cost": 140}
+    ]
+  },
+  {
+    "id": "support",
+    "name": "Support Tower",
+    "type": "support",
+    "baseDamage": 0,
+    "range": 150,
+    "fireRate": 0,
+    "cost": 20,
+    "texture": "tower-basic",
+    "projectileType": "none",
+    "description": "Provides damage and fire rate buffs to nearby towers",
+    "buffs": {
+      "dmg": 1.25,
+      "firerate": 1.15,
+      "radius": 120
+    },
+    "upgrades": [
+      {"tier": 1, "damageMult": 1.0, "rangeMult": 1.1, "fireRateMult": 1.0, "cost": 40},
+      {"tier": 2, "damageMult": 1.0, "rangeMult": 1.2, "fireRateMult": 1.0, "cost": 80},
+      {"tier": 3, "damageMult": 1.0, "rangeMult": 1.3, "fireRateMult": 1.0, "cost": 160}
+    ]
+  }
+]

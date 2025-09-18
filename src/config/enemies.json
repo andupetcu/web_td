@@ -1,0 +1,66 @@
+[
+  {
+    "id": "normal",
+    "name": "Normal Enemy",
+    "type": "normal",
+    "health": 100,
+    "speed": 60,
+    "armor": 0,
+    "bounty": 5,
+    "texture": "enemy-normal",
+    "size": 24,
+    "description": "Basic enemy with balanced stats"
+  },
+  {
+    "id": "fast",
+    "name": "Fast Enemy",
+    "type": "fast",
+    "health": 60,
+    "speed": 100,
+    "armor": 0,
+    "bounty": 6,
+    "texture": "enemy-fast",
+    "size": 20,
+    "description": "Quick but fragile enemy"
+  },
+  {
+    "id": "heavy",
+    "name": "Heavy Enemy",
+    "type": "heavy",
+    "health": 300,
+    "speed": 30,
+    "armor": 2,
+    "bounty": 12,
+    "texture": "enemy-heavy",
+    "size": 28,
+    "description": "Slow but heavily armored enemy"
+  },
+  {
+    "id": "swarm",
+    "name": "Swarm Enemy",
+    "type": "swarm",
+    "health": 25,
+    "speed": 80,
+    "armor": 0,
+    "bounty": 2,
+    "texture": "enemy-normal",
+    "size": 16,
+    "description": "Weak enemy that spawns in large numbers"
+  },
+  {
+    "id": "boss",
+    "name": "Boss Enemy",
+    "type": "boss",
+    "health": 1500,
+    "speed": 40,
+    "armor": 5,
+    "bounty": 50,
+    "texture": "enemy-heavy",
+    "size": 40,
+    "description": "Powerful boss enemy with high health and armor",
+    "abilities": {
+      "regeneration": 2,
+      "immunity": ["slow"]
+    }
+  }
+]
