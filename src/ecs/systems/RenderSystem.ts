@@ -39,23 +39,72 @@ export class RenderSystem implements System {
 
   private createSprite(entityId: number, render: Render, position: Position): void {
     try {
-      const sprite = this.scene.add.sprite(position.x, position.y, render.texture, render.frame);
-      sprite.setOrigin(0.5, 0.5);
-      sprite.setScale(render.scale);
-      sprite.setRotation(render.rotation);
-      sprite.setVisible(render.visible);
+      // Try to create sprite with texture first
+      if (this.scene.textures.exists(render.texture)) {
+        const sprite = this.scene.add.sprite(position.x, position.y, render.texture, render.frame);
+        sprite.setOrigin(0.5, 0.5);
+        sprite.setScale(render.scale);
+        sprite.setRotation(render.rotation);
+        sprite.setVisible(render.visible);
 
-      // Store reference to entity ID for cleanup
-      sprite.setData('entityId', entityId);
+        // Store reference to entity ID for cleanup
+        sprite.setData('entityId', entityId);
 
-      // Add to sprite group for management
-      this.spriteGroup.add(sprite);
+        // Add to sprite group for management
+        this.spriteGroup.add(sprite);
 
-      // Store sprite reference in render component
-      render.sprite = sprite;
+        // Store sprite reference in render component
+        render.sprite = sprite;
+      } else {
+        // Create placeholder rectangle if texture doesn't exist
+        console.log(`Creating placeholder for missing texture: ${render.texture}`);
+        this.createPlaceholderSprite(entityId, render, position);
+      }
     } catch (error) {
       console.warn(`Failed to create sprite with texture '${render.texture}':`, error);
+      // Create placeholder as fallback
+      this.createPlaceholderSprite(entityId, render, position);
     }
+  }
+
+  private createPlaceholderSprite(entityId: number, render: Render, position: Position): void {
+    // Create colored rectangle based on texture name
+    let color = 0xff0000; // Default red
+    let size = 20;
+
+    if (render.texture.includes('enemy')) {
+      if (render.texture.includes('normal')) {
+        color = 0xff4444; // Red for normal enemies
+      } else if (render.texture.includes('fast')) {
+        color = 0xffff44; // Yellow for fast enemies
+      } else if (render.texture.includes('heavy')) {
+        color = 0x4444ff; // Blue for heavy enemies
+      }
+      size = 16;
+    } else if (render.texture.includes('tower')) {
+      color = 0x44ff44; // Green for towers
+      size = 24;
+    } else if (render.texture.includes('projectile')) {
+      color = 0xffffff; // White for projectiles
+      size = 4;
+    }
+
+    const graphics = this.scene.add.graphics();
+    graphics.fillStyle(color);
+    graphics.fillRoundedRect(-size/2, -size/2, size, size, 2);
+    graphics.setPosition(position.x, position.y);
+    graphics.setScale(render.scale);
+    graphics.setRotation(render.rotation);
+    graphics.setVisible(render.visible);
+
+    // Store reference to entity ID for cleanup
+    graphics.setData('entityId', entityId);
+
+    // Add to sprite group for management
+    this.spriteGroup.add(graphics);
+
+    // Store graphics reference in render component
+    render.sprite = graphics;
   }
 
   private cleanupDestroyedSprites(world: World): void {

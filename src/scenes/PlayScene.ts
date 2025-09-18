@@ -30,35 +30,51 @@ export class PlayScene extends Phaser.Scene {
     this.gridGraphics = this.add.graphics();
     this.drawGrid();
 
-    // HUD area
+    // HUD area - modern design with gradient effect
     const hudHeight = gameConfig.ui.hudHeight;
-    const hudBackground = this.add.rectangle(width / 2, height - hudHeight / 2, width, hudHeight, 0x34495e);
+    const hudBackground = this.add.graphics();
+    hudBackground.fillGradientStyle(0x2c3e50, 0x2c3e50, 0x34495e, 0x34495e, 1, 1, 1, 1);
+    hudBackground.fillRect(0, height - hudHeight, width, hudHeight);
 
-    // UI Text elements
-    this.goldText = this.add.text(20, height - hudHeight + 20, `Gold: ${this.gameManager.economy.getGold()}`, {
-      fontSize: '24px',
+    // Add a subtle border
+    hudBackground.lineStyle(2, 0x3498db, 0.6);
+    hudBackground.strokeRect(0, height - hudHeight, width, hudHeight);
+
+    // UI Text elements with better styling
+    this.goldText = this.add.text(30, height - hudHeight + 25, `💰 Gold: ${this.gameManager.economy.getGold()}`, {
+      fontSize: '20px',
       color: '#f1c40f',
       fontFamily: 'Arial, sans-serif',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      stroke: '#2c3e50',
+      strokeThickness: 2
     });
 
-    this.waveText = this.add.text(200, height - hudHeight + 20, `Wave: ${this.gameManager.waveManager.getCurrentWave()}`, {
-      fontSize: '24px',
+    this.waveText = this.add.text(220, height - hudHeight + 25, `🌊 Wave: ${this.gameManager.waveManager.getCurrentWave()}`, {
+      fontSize: '20px',
       color: '#e74c3c',
       fontFamily: 'Arial, sans-serif',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      stroke: '#2c3e50',
+      strokeThickness: 2
     });
 
-    this.livesText = this.add.text(350, height - hudHeight + 20, `Lives: ${this.gameManager.lives}`, {
-      fontSize: '24px',
+    this.livesText = this.add.text(400, height - hudHeight + 25, `❤️ Lives: ${this.gameManager.lives}`, {
+      fontSize: '20px',
       color: '#e67e22',
       fontFamily: 'Arial, sans-serif',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      stroke: '#2c3e50',
+      strokeThickness: 2
     });
 
-    // Tower palette
+    // Tower palette with modern styling
     const paletteWidth = gameConfig.ui.towerPaletteWidth;
-    const paletteBackground = this.add.rectangle(width - paletteWidth / 2, height / 2 - hudHeight / 2, paletteWidth, height - hudHeight, 0x2c3e50);
+    const paletteBackground = this.add.graphics();
+    paletteBackground.fillGradientStyle(0x2c3e50, 0x34495e, 0x2c3e50, 0x34495e, 1, 1, 1, 1);
+    paletteBackground.fillRoundedRect(width - paletteWidth, 0, paletteWidth, height - hudHeight, 8);
+    paletteBackground.lineStyle(2, 0x3498db, 0.6);
+    paletteBackground.strokeRoundedRect(width - paletteWidth, 0, paletteWidth, height - hudHeight, 8);
 
     this.createTowerPalette();
 
@@ -76,19 +92,31 @@ export class PlayScene extends Phaser.Scene {
     // Start the game
     this.gameManager.startGame();
 
-    // Add wave control button
-    const startWaveButton = this.add.rectangle(500, height - hudHeight + 30, 120, 40, 0x27ae60);
-    startWaveButton.setInteractive({ useHandCursor: true });
+    // Add modern wave control button
+    const startWaveButton = this.add.graphics();
+    startWaveButton.fillGradientStyle(0x27ae60, 0x2ecc71, 0x27ae60, 0x2ecc71, 1, 1, 1, 1);
+    startWaveButton.fillRoundedRect(500 - 75, height - hudHeight + 10, 150, 50, 8);
+    startWaveButton.lineStyle(2, 0x1abc9c, 0.8);
+    startWaveButton.strokeRoundedRect(500 - 75, height - hudHeight + 10, 150, 50, 8);
+    startWaveButton.setInteractive(new Phaser.Geom.Rectangle(500 - 75, height - hudHeight + 10, 150, 50), Phaser.Geom.Rectangle.Contains);
     startWaveButton.on('pointerdown', () => {
       eventBus.emit('wave:start');
       eventBus.emit('ui:click');
     });
+    startWaveButton.on('pointerover', () => {
+      startWaveButton.setScale(1.05);
+    });
+    startWaveButton.on('pointerout', () => {
+      startWaveButton.setScale(1.0);
+    });
 
-    this.add.text(500, height - hudHeight + 30, 'Start Wave', {
-      fontSize: '16px',
+    this.add.text(500, height - hudHeight + 35, '🌊 START WAVE', {
+      fontSize: '18px',
       color: '#ffffff',
       fontFamily: 'Arial, sans-serif',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      stroke: '#2c3e50',
+      strokeThickness: 2
     }).setOrigin(0.5);
 
     // Settings button
@@ -253,36 +281,46 @@ export class PlayScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Basic Tower
-    const basicTower = this.add.rectangle(paletteX, startY, 60, 60, 0x4a90e2);
-    basicTower.setInteractive({ useHandCursor: true });
-    basicTower.on('pointerdown', () => this.selectTowerType('basic'));
-    this.add.text(paletteX, startY + 40, 'Basic\n$10\n[1]', {
-      fontSize: '11px',
-      color: '#ffffff',
-      fontFamily: 'Arial, sans-serif',
-      align: 'center'
-    }).setOrigin(0.5);
+    this.createTowerButton(paletteX, startY, 'basic', '⚡', 'Basic\n$10\n[1]', 0x4a90e2);
 
     // AOE Tower
-    const aoeTower = this.add.rectangle(paletteX, startY + 100, 60, 60, 0xe74c3c);
-    aoeTower.setInteractive({ useHandCursor: true });
-    aoeTower.on('pointerdown', () => this.selectTowerType('aoe'));
-    this.add.text(paletteX, startY + 140, 'AOE\n$25\n[2]', {
-      fontSize: '11px',
-      color: '#ffffff',
-      fontFamily: 'Arial, sans-serif',
-      align: 'center'
-    }).setOrigin(0.5);
+    this.createTowerButton(paletteX, startY + 90, 'aoe', '💥', 'AOE\n$25\n[2]', 0xe74c3c);
 
     // Slow Tower
-    const slowTower = this.add.rectangle(paletteX, startY + 200, 60, 60, 0x3498db);
-    slowTower.setInteractive({ useHandCursor: true });
-    slowTower.on('pointerdown', () => this.selectTowerType('slow'));
-    this.add.text(paletteX, startY + 240, 'Slow\n$15\n[3]', {
-      fontSize: '11px',
+    this.createTowerButton(paletteX, startY + 180, 'slow', '❄️', 'Slow\n$15\n[3]', 0x3498db);
+  }
+
+  private createTowerButton(x: number, y: number, towerType: string, icon: string, description: string, color: number): void {
+    // Create rounded button background
+    const button = this.add.graphics();
+    button.fillGradientStyle(color, color * 0.8, color, color * 0.8, 1, 1, 1, 1);
+    button.fillRoundedRect(x - 35, y - 25, 70, 50, 8);
+    button.lineStyle(2, 0xffffff, 0.8);
+    button.strokeRoundedRect(x - 35, y - 25, 70, 50, 8);
+
+    button.setInteractive(new Phaser.Geom.Rectangle(x - 35, y - 25, 70, 50), Phaser.Geom.Rectangle.Contains);
+    button.on('pointerdown', () => this.selectTowerType(towerType));
+    button.on('pointerover', () => {
+      button.setScale(1.05);
+    });
+    button.on('pointerout', () => {
+      button.setScale(1.0);
+    });
+
+    // Add icon
+    this.add.text(x, y - 10, icon, {
+      fontSize: '24px',
+      fontFamily: 'Arial, sans-serif'
+    }).setOrigin(0.5);
+
+    // Add description
+    this.add.text(x, y + 20, description, {
+      fontSize: '10px',
       color: '#ffffff',
       fontFamily: 'Arial, sans-serif',
-      align: 'center'
+      align: 'center',
+      stroke: '#2c3e50',
+      strokeThickness: 1
     }).setOrigin(0.5);
   }
 

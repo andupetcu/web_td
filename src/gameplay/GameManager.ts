@@ -146,6 +146,8 @@ export class GameManager {
     // Enemy events
     eventBus.on('enemy:killed', (data: { bounty: number; enemyType: string; enemyId: number }) => {
       this.score += data.bounty;
+      // Add bounty to economy (gold)
+      this.economy.addGold(data.bounty, `${data.enemyType} kill`);
     });
 
     eventBus.on('enemy:reachedGoal', () => {

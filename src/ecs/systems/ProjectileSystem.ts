@@ -6,6 +6,7 @@ import { ProjectilePool, Projectile } from '@/ecs/pools/ProjectilePool';
 import { CollisionManager } from '@/gameplay/CollisionManager';
 import { EnemyFactory } from '@/enemies/EnemyFactory';
 import { RenderSystem } from './RenderSystem';
+import { eventBus } from '@/core/EventBus';
 
 export class ProjectileSystem implements System {
   private projectilePool: ProjectilePool;
@@ -91,7 +92,14 @@ export class ProjectileSystem implements System {
     // Handle enemy death
     if (isDead) {
       const bounty = this.enemyFactory.destroyEnemy(targetId);
-      // TODO: Add bounty to player gold
+
+      // Emit enemy killed event with bounty
+      eventBus.emit('enemy:killed', {
+        enemyId: targetId,
+        bounty: bounty,
+        enemyType: 'normal',
+        position: { x: position.x, y: position.y }
+      });
 
       if (position) {
         this.renderSystem.createFloatingText(
@@ -154,6 +162,15 @@ export class ProjectileSystem implements System {
       // Handle enemy death
       if (isDead) {
         const bounty = this.enemyFactory.destroyEnemy(target.entityId);
+
+        // Emit enemy killed event with bounty
+        eventBus.emit('enemy:killed', {
+          enemyId: target.entityId,
+          bounty: bounty,
+          enemyType: 'normal',
+          position: { x: target.position.x, y: target.position.y }
+        });
+
         this.renderSystem.createFloatingText(
           target.position.x,
           target.position.y + 10,
