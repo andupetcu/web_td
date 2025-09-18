@@ -150,7 +150,6 @@ export class WaveManager {
   }
 
   private spawnEnemy(enemyType: string): void {
-    console.log(`WaveManager: Attempting to spawn ${enemyType}`);
     const scaledConfig = this.getScaledEnemyConfig(enemyType);
     if (scaledConfig) {
       // Create a temporary enemy config with scaled stats
@@ -166,7 +165,6 @@ export class WaveManager {
 
         const enemy = this.enemyFactory.spawnEnemy(enemyType);
         if (enemy) {
-          console.log(`WaveManager: Successfully spawned enemy ${enemy.id} of type ${enemyType}`);
           // Apply scaling manually if needed
           this.totalEnemiesSpawned++;
           eventBus.emit('enemy:spawned', {
@@ -174,8 +172,6 @@ export class WaveManager {
             enemyType,
             wave: this.currentWave
           });
-        } else {
-          console.error(`WaveManager: Failed to spawn enemy of type ${enemyType}`);
         }
       }
     }
@@ -260,9 +256,7 @@ export class WaveManager {
 
   // Public API
   startWave(waveNumber?: number): boolean {
-    console.log(`WaveManager: startWave called, current state: ${this.waveState}`);
     if (this.waveState !== WaveState.WAITING && this.waveState !== WaveState.COMPLETED) {
-      console.log(`WaveManager: Cannot start wave, invalid state: ${this.waveState}`);
       return false;
     }
 
@@ -272,16 +266,13 @@ export class WaveManager {
       this.currentWave++;
     }
 
-    console.log(`WaveManager: Starting wave ${this.currentWave}`);
     const waveConfig = this.getCurrentWaveConfig();
     if (!waveConfig) {
-      console.log(`WaveManager: No config for wave ${this.currentWave}, generating endless wave`);
       // Generate endless wave
       this.generateEndlessWave();
       return true;
     }
 
-    console.log(`WaveManager: Wave config found:`, waveConfig);
     this.waveState = WaveState.PREPARING;
     this.prepTimer = waveConfig.prepTime;
     this.waveStartTime = performance.now();

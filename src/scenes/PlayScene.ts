@@ -92,6 +92,9 @@ export class PlayScene extends Phaser.Scene {
     // Start the game
     this.gameManager.startGame();
 
+    // Show welcome tutorial
+    this.showWelcomeHint();
+
     // Add modern wave control button
     const startWaveButton = this.add.graphics();
     startWaveButton.fillGradientStyle(0x27ae60, 0x2ecc71, 0x27ae60, 0x2ecc71, 1, 1, 1, 1);
@@ -247,7 +250,9 @@ export class PlayScene extends Phaser.Scene {
     const paletteWidth = gameConfig.ui.towerPaletteWidth;
 
     this.gridGraphics.clear();
-    this.gridGraphics.lineStyle(1, 0x7f8c8d, 0.3);
+
+    // Draw subtle grid lines
+    this.gridGraphics.lineStyle(1, 0x7f8c8d, 0.2);
 
     // Draw vertical lines
     for (let x = 0; x <= width - paletteWidth; x += gridSize) {
@@ -262,6 +267,24 @@ export class PlayScene extends Phaser.Scene {
     }
 
     this.gridGraphics.strokePath();
+
+    // Highlight the enemy path
+    const pathY = Math.floor((height - hudHeight) / 2 / gridSize) * gridSize + gridSize / 2;
+    this.gridGraphics.lineStyle(4, 0xe74c3c, 0.6);
+    this.gridGraphics.moveTo(0, pathY);
+    this.gridGraphics.lineTo(width - paletteWidth, pathY);
+    this.gridGraphics.strokePath();
+
+    // Add path arrows
+    this.gridGraphics.fillStyle(0xe74c3c, 0.8);
+    for (let x = 50; x < width - paletteWidth; x += 100) {
+      // Draw arrow triangles
+      this.gridGraphics.fillTriangle(
+        x, pathY - 6,
+        x + 12, pathY,
+        x, pathY + 6
+      );
+    }
   }
 
   private createTowerPalette(): void {
@@ -430,5 +453,73 @@ export class PlayScene extends Phaser.Scene {
     this.helpPanel.add(closeText);
 
     this.helpPanel.setVisible(false);
+  }
+
+  private showWelcomeHint(): void {
+    const { width, height } = this.cameras.main;
+
+    // Create a temporary tutorial overlay
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x000000, 0.7);
+    overlay.fillRect(0, 0, width, height);
+
+    const tutorialBox = this.add.graphics();
+    tutorialBox.fillGradientStyle(0x3498db, 0x2980b9, 0x3498db, 0x2980b9, 1, 1, 1, 1);
+    tutorialBox.fillRoundedRect(width/2 - 250, height/2 - 100, 500, 200, 12);
+    tutorialBox.lineStyle(3, 0xecf0f1, 0.9);
+    tutorialBox.strokeRoundedRect(width/2 - 250, height/2 - 100, 500, 200, 12);
+
+    const title = this.add.text(width/2, height/2 - 60, '🎯 Welcome to Tower Defense!', {
+      fontSize: '24px',
+      color: '#ffffff',
+      fontFamily: 'Arial, sans-serif',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    const instructions = this.add.text(width/2, height/2 - 10,
+      'Use keyboard: 1,2,3 to select towers • Space to start waves\n' +
+      'Click towers to select • Click grid to place • ? for help\n' +
+      'Enemies follow the red path • Defend the right side!', {
+      fontSize: '16px',
+      color: '#ecf0f1',
+      fontFamily: 'Arial, sans-serif',
+      align: 'center',
+      lineSpacing: 8
+    }).setOrigin(0.5);
+
+    const closeButton = this.add.graphics();
+    closeButton.fillGradientStyle(0xe74c3c, 0xc0392b, 0xe74c3c, 0xc0392b, 1, 1, 1, 1);
+    closeButton.fillRoundedRect(width/2 - 60, height/2 + 50, 120, 40, 6);
+    closeButton.lineStyle(2, 0xffffff, 0.8);
+    closeButton.strokeRoundedRect(width/2 - 60, height/2 + 50, 120, 40, 6);
+    closeButton.setInteractive(new Phaser.Geom.Rectangle(width/2 - 60, height/2 + 50, 120, 40), Phaser.Geom.Rectangle.Contains);
+
+    const closeText = this.add.text(width/2, height/2 + 70, 'GOT IT!', {
+      fontSize: '16px',
+      color: '#ffffff',
+      fontFamily: 'Arial, sans-serif',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    closeButton.on('pointerdown', () => {
+      overlay.destroy();
+      tutorialBox.destroy();
+      title.destroy();
+      instructions.destroy();
+      closeButton.destroy();
+      closeText.destroy();
+    });
+
+    // Auto-close after 10 seconds
+    this.time.delayedCall(10000, () => {
+      if (overlay.active) {
+        overlay.destroy();
+        tutorialBox.destroy();
+        title.destroy();
+        instructions.destroy();
+        closeButton.destroy();
+        closeText.destroy();
+      }
+    });
   }
 }
